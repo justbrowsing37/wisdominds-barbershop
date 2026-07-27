@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookings Calendar | Wisdominds Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<script>
+  (function(){
+    var saved = localStorage.getItem("wisdominds-theme");
+    if(saved){ document.documentElement.setAttribute("data-theme", saved); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="site">
+  <div class="header-row wrap">
+    <a class="mark" href="index.html"><span class="mark-dot" aria-hidden="true"></span> Wisdominds Admin</a>
+    <nav class="nav-links">
+      <a href="barbers.html">Barbers</a>
+      <a href="music.html">Music</a>
+    </nav>
+    <div class="header-actions">
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+        <svg class="icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"></path>
+        </svg>
+      </button>
+      <button class="btn btn-outline btn-sm" id="signOutBtn" type="button">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap portal-main">
+  <div class="admin-topbar">
+    <div>
+      <h1 id="welcomeHeading">Bookings</h1>
+      <p>Every appointment across the shop, on one calendar.</p>
+    </div>
+    <nav class="admin-tabs">
+      <a href="admin-portal.html" class="is-active">Calendar</a>
+      <a href="admin-manage.html">Manage</a>
+    </nav>
+  </div>
+
+  <section class="card portal-section full">
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button type="button" id="calPrev" aria-label="Previous">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        </button>
+        <button type="button" class="cal-today" id="calToday">Today</button>
+        <button type="button" id="calNext" aria-label="Next">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+        <span class="cal-title" id="calTitle">—</span>
+      </div>
+      <div class="cal-controls">
+        <select class="cal-filter" id="propertyFilter">
+          <option value="">All properties</option>
+          <option value="barbers">Barbers</option>
+          <option value="music">Music</option>
+        </select>
+        <select class="cal-filter" id="barberFilter">
+          <option value="">All providers</option>
+        </select>
+        <div class="cal-views">
+          <button type="button" data-view="month" class="is-active">Month</button>
+          <button type="button" data-view="agenda">Agenda</button>
+        </div>
+        <button class="btn btn-outline btn-sm" type="button" id="exportCsvBtn">Export CSV</button>
+      </div>
+    </div>
+
+    <div id="monthView">
+      <div class="cal-weekhead" id="calWeekhead"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div id="agendaView" hidden>
+      <div class="agenda" id="agendaList"></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="detailOverlay" hidden>
+  <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal-head">
+      <h3 id="detailTitle">Booking</h3>
+      <button class="modal-close" type="button" id="detailClose" aria-label="Close">✕</button>
+    </div>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js" integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/booking.js"></script>
+<script>
+  
+  document.getElementById("signOutBtn").addEventListener("click", signOut);
+
+  var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  var allBookings = [];
+  var state = { view: "month", cursor: startOfMonth(new Date()), property: "", barber: "" };
+
+  function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function sameDay(a, b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+  function money(cents){ return cents == null ? "" : "$" + (cents / 100).toFixed(2); }
+  function timeStr(d){ return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); }
+
+  // ---------- data ----------
+  async function loadBookings(){
+    var { data } = await supabaseClient
+      .from("bookings")
+      .select("id, slot_start, slot_end, status, guest_name, guest_email, service_name, provider_id, " +
+              "services(name, property), providers(display_name), profiles:student_profile_id(name, phone), payments(status, amount_cents)")
+      .order("slot_start", { ascending: true });
+
+    allBookings = (data || []).map(function(b){
+      var svc = Array.isArray(b.services) ? b.services[0] : b.services;
+      var prov = Array.isArray(b.providers) ? b.providers[0] : b.providers;
+      var prof = Array.isArray(b.profiles) ? b.profiles[0] : b.profiles;
+      var pay = b.payments && b.payments[0] ? b.payments[0] : null;
+      return {
+        id: b.id,
+        start: new Date(b.slot_start),
+        end: new Date(b.slot_end),
+        status: b.status,
+        service: (svc && svc.name) || b.service_name || "Service",
+        barber: (prov && prov.display_name) || "—",
+        providerId: b.provider_id,
+        customer: b.guest_name || (prof && prof.name) || "Customer",
+        email: b.guest_email || null,
+        phone: (prof && prof.phone) || null,
+        isGuest: !!b.guest_name,
+        property: (svc && svc.property) || "barbers",
+        paymentStatus: pay ? pay.status : "unpaid",
+        amountCents: pay ? pay.amount_cents : null
+      };
+    });
+
+    buildBarberFilter();
+  }
+
+  function buildBarberFilter(){
+    var sel = document.getElementById("barberFilter");
+    var seen = {};
+    var opts = ['<option value="">All providers</option>'];
+    allBookings.forEach(function(b){
+      if (b.providerId && !seen[b.providerId]){
+        seen[b.providerId] = true;
+        opts.push('<option value="' + b.providerId + '">' + escapeHtml(b.barber) + '</option>');
+      }
+    });
+    var prev = sel.value;
+    sel.innerHTML = opts.join("");
+    sel.value = prev;
+  }
+
+  function filtered(){
+    return allBookings.filter(function(b){
+      return (!state.property || b.property === state.property) &&
+             (!state.barber || b.providerId === state.barber);
+    });
+  }
+
+  // ---------- month view ----------
+  function renderWeekhead(){
+    document.getElementById("calWeekhead").innerHTML = DOW.map(function(d){ return "<span>" + d + "</span>"; }).join("");
+  }
+
+  function renderMonth(){
+    var first = startOfMonth(state.cursor);
+    document.getElementById("calTitle").textContent = MONTHS[first.getMonth()] + " " + first.getFullYear();
+
+    var gridStart = new Date(first);
+    gridStart.setDate(first.getDate() - first.getDay());
+    var today = new Date();
+    var rows = filtered();
+    var grid = document.getElementById("calGrid");
+    grid.innerHTML = "";
+
+    for (var i = 0; i < 42; i++){
+      var day = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+      var dayBookings = rows.filter(function(b){ return sameDay(b.start, day); })
+        .sort(function(a, b){ return a.start - b.start; });
+
+      var cell = document.createElement("div");
+      cell.className = "cal-cell" +
+        (day.getMonth() !== first.getMonth() ? " is-other" : "") +
+        (sameDay(day, today) ? " is-today" : "");
+      cell.innerHTML = '<span class="cal-date">' + day.getDate() + '</span>';
+
+      var shown = dayBookings.slice(0, 3);
+      shown.forEach(function(b){
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "cal-chip is-" + b.status;
+        chip.innerHTML = '<span class="ct">' + timeStr(b.start) + '</span><span class="cl">' + escapeHtml(b.service) + '</span>';
+        chip.addEventListener("click", function(e){ e.stopPropagation(); openDetail(b); });
+        cell.appendChild(chip);
+      });
+      if (dayBookings.length > 3){
+        var more = document.createElement("button");
+        more.type = "button";
+        more.className = "cal-more";
+        more.textContent = "+" + (dayBookings.length - 3) + " more";
+        cell.appendChild(more);
+      }
+
+      (function(d, list){
+        cell.addEventListener("click", function(){ if (list.length) openDay(d, list); });
+      })(day, dayBookings);
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // ---------- agenda view ----------
+  function renderAgenda(){
+    var today = new Date();
+    document.getElementById("calTitle").textContent = "All upcoming & past";
+    var rows = filtered().slice().sort(function(a, b){ return a.start - b.start; });
+    var wrap = document.getElementById("agendaList");
+
+    if (!rows.length){
+      wrap.innerHTML = '<p class="empty-note">No bookings yet.</p>';
+      return;
+    }
+
+    var groups = [];
+    var byKey = {};
+    rows.forEach(function(b){
+      var key = b.start.toDateString();
+      if (!byKey[key]){ byKey[key] = { date: b.start, items: [] }; groups.push(byKey[key]); }
+      byKey[key].items.push(b);
+    });
+
+    wrap.innerHTML = "";
+    groups.forEach(function(g){
+      var isPast = g.date < today && !sameDay(g.date, today);
+      var block = document.createElement("div");
+      block.className = "agenda-day";
+      var label = document.createElement("div");
+      label.className = "agenda-daylabel" + (isPast ? " is-past" : "");
+      label.innerHTML = g.date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" }) +
+        ' <span class="count">' + g.items.length + " booking" + (g.items.length > 1 ? "s" : "") + "</span>";
+      block.appendChild(label);
+      g.items.forEach(function(b){ block.appendChild(agendaRow(b)); });
+      wrap.appendChild(block);
+    });
+  }
+
+  function agendaRow(b){
+    var row = document.createElement("div");
+    row.className = "agenda-row is-" + b.status;
+    row.innerHTML =
+      '<span class="ag-time">' + timeStr(b.start) + " – " + timeStr(b.end) + '</span>' +
+      '<span class="ag-svc">' + escapeHtml(b.service) + '</span>' +
+      '<span class="ag-who">' + escapeHtml(b.customer) + " · " + escapeHtml(b.barber) + '</span>' +
+      '<span class="ag-tags">' +
+        '<span class="pill pill-' + b.status + '">' + b.status + '</span>' +
+        '<span class="pill pill-' + (b.paymentStatus === "paid" ? "paid" : "pending") + '">' + b.paymentStatus + '</span>' +
+      '</span>';
+    row.addEventListener("click", function(){ openDetail(b); });
+    return row;
+  }
+
+  // ---------- detail / day modals ----------
+  var overlay = document.getElementById("detailOverlay");
+  var detailReturnFocus = null;
+  function detailFocusables(){
+    return Array.prototype.slice.call(overlay.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+    )).filter(function(n){ return n.offsetParent !== null; });
+  }
+  function showModal(){
+    detailReturnFocus = document.activeElement;
+    overlay.hidden = false;
+    var f = detailFocusables();
+    if (f.length) f[0].focus();
+  }
+  function hideModal(){
+    overlay.hidden = true;
+    if (detailReturnFocus && detailReturnFocus.focus) detailReturnFocus.focus();
+    detailReturnFocus = null;
+  }
+  document.getElementById("detailClose").addEventListener("click", hideModal);
+  overlay.addEventListener("click", function(e){ if (e.target === overlay) hideModal(); });
+  // Escape closes; Tab is trapped inside the open dialog.
+  document.addEventListener("keydown", function(e){
+    if (overlay.hidden) return;
+    if (e.key === "Escape"){ hideModal(); return; }
+    if (e.key === "Tab"){
+      var f = detailFocusables();
+      if (!f.length){ e.preventDefault(); return; }
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  });
+
+  function openDay(date, list){
+    document.getElementById("detailTitle").textContent =
+      date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    var body = document.getElementById("detailBody");
+    body.innerHTML = "";
+    var container = document.createElement("div");
+    container.className = "agenda";
+    var block = document.createElement("div");
+    block.className = "agenda-day";
+    list.forEach(function(b){ block.appendChild(agendaRow(b)); });
+    container.appendChild(block);
+    body.appendChild(container);
+    showModal();
+  }
+
+  function openDetail(b){
+    document.getElementById("detailTitle").textContent = b.service;
+    var whenStr = b.start.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) +
+      " · " + timeStr(b.start) + " – " + timeStr(b.end);
+    var rows =
+      '<div class="detail-list">' +
+        detailRow("When", whenStr) +
+        detailRow("Barber", escapeHtml(b.barber)) +
+        detailRow("Customer", escapeHtml(b.customer) + (b.isGuest ? " (guest)" : "")) +
+        (b.email ? detailRow("Email", '<a href="mailto:' + escapeHtml(b.email) + '">' + escapeHtml(b.email) + "</a>") : "") +
+        (b.phone ? detailRow("Phone", '<a href="tel:' + escapeHtml(b.phone) + '">' + escapeHtml(b.phone) + "</a>") : "") +
+        detailRow("Property", b.property) +
+        detailRow("Status", '<span class="pill pill-' + b.status + '">' + b.status + "</span>") +
+        detailRow("Payment", '<span class="pill pill-' + (b.paymentStatus === "paid" ? "paid" : "pending") + '">' + b.paymentStatus + "</span>" +
+          (b.amountCents != null ? " " + money(b.amountCents) : "")) +
+      '</div>';
+
+    var canCancel = b.status === "pending" || b.status === "confirmed";
+    var actions = canCancel
+      ? '<div class="modal-actions"><button class="btn btn-outline btn-sm" type="button" id="detailCancelBtn">Cancel booking</button></div>'
+      : "";
+
+    document.getElementById("detailBody").innerHTML = rows + actions;
+
+    if (canCancel){
+      document.getElementById("detailCancelBtn").addEventListener("click", async function(){
+        this.disabled = true;
+        var ok = await cancelBooking(b.id, b.paymentStatus === "paid");
+        if (ok){ hideModal(); await loadBookings(); render(); }
+        else this.disabled = false;
+      });
+    }
+    showModal();
+  }
+
+  function detailRow(k, v){
+    return '<div class="detail-row"><span class="k">' + k + '</span><span class="v">' + v + "</span></div>";
+  }
+
+  // ---------- CSV ----------
+  function csvEscape(v){
+    var s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function stamp(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+
+  document.getElementById("exportCsvBtn").addEventListener("click", function(){
+    var rows = filtered();
+    var lines = [["Date","Time","Service","Property","Customer","Email","Phone","Barber","Status","Payment","Amount (CAD)"].join(",")];
+    rows.forEach(function(b){
+      lines.push([
+        stamp(b.start),
+        timeStr(b.start),
+        b.service, b.property, b.customer, b.email || "", b.phone || "", b.barber,
+        b.status, b.paymentStatus,
+        b.amountCents != null ? (b.amountCents/100).toFixed(2) : ""
+      ].map(csvEscape).join(","));
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "wisdominds-bookings-" + (state.property || "all") + "-" + stamp(new Date()) + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // ---------- view switching + nav ----------
+  function render(){
+    if (state.view === "month"){
+      document.getElementById("monthView").hidden = false;
+      document.getElementById("agendaView").hidden = true;
+      renderMonth();
+    } else {
+      document.getElementById("monthView").hidden = true;
+      document.getElementById("agendaView").hidden = false;
+      renderAgenda();
+    }
+  }
+
+  document.querySelectorAll(".cal-views button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".cal-views button").forEach(function(x){ x.classList.remove("is-active"); });
+      btn.classList.add("is-active");
+      state.view = btn.getAttribute("data-view");
+      render();
+    });
+  });
+  document.getElementById("calPrev").addEventListener("click", function(){
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1); render();
+  });
+  document.getElementById("calNext").addEventListener("click", function(){
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1); render();
+  });
+  document.getElementById("calToday").addEventListener("click", function(){
+    state.cursor = startOfMonth(new Date()); render();
+  });
+  document.getElementById("propertyFilter").addEventListener("change", function(){ state.property = this.value; render(); });
+  document.getElementById("barberFilter").addEventListener("change", function(){ state.barber = this.value; render(); });
+
+  (async function init(){
+    var profile = await requireRole(["admin"]);
+    if (!profile) return;
+    document.getElementById("welcomeHeading").textContent = "Bookings";
+    renderWeekhead();
+    await loadBookings();
+    render();
+  })();
+</script>
+
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/nav-toggle.js"></script>
+
+</body>
+</html>
