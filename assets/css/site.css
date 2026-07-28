@@ -72,7 +72,7 @@ header.site{
   letter-spacing:-.01em; text-decoration:none; color:var(--ink);
   display:flex; align-items:center; gap:9px;
 }
-.mark-dot{width:9px; height:9px; border-radius:50%; background:var(--gold); flex-shrink:0;}
+.mark-logo{height:28px; width:auto; flex-shrink:0; display:block;}
 .nav-links{
   display:flex; align-items:center; gap:28px;
   font-family:var(--body); font-size:.92rem; font-weight:500;
