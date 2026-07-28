@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="assets/images/favicon-64.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/images/favicon-180.png">
-<title>Teacher Portal | Wisdominds Music School</title>
+<title>Provider Portal | Wisdominds Barbers &amp; Braiders</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
   <div class="header-row wrap">
     <a class="mark" href="index.html"><img src="assets/images/logo2_icon-transparent.png" alt="" class="mark-logo"> Wisdominds Cooperative</a>
     <nav class="nav-links">
-      <a href="music.html">Music School</a>
+      <a href="barbers.html">Barbers &amp; Braiders</a>
     </nav>
     <div class="header-actions">
       <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false">
@@ -209,8 +209,6 @@
     if (providerRow.property === "barbers") {
       document.title = "Provider Portal | Wisdominds Barbers & Braiders";
       document.getElementById("welcomeSub").textContent = "Manage your weekly availability and see who's booked in.";
-      document.querySelector('.nav-links a[href="music.html"]').outerHTML =
-        '<a href="barbers.html">Barbers &amp; Braiders</a>';
     }
 
     renderAvailability();
