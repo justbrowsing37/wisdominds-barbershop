@@ -165,8 +165,8 @@ additional_redirect_urls = [
   "http://localhost:8080/login.html",
   "http://localhost:8080/register.html",
   "http://localhost:8080/index.html",
-  "http://localhost:8080/student-portal.html",
-  "http://localhost:8080/teacher-portal.html"
+  "http://localhost:8080/my-appointments.html",
+  "http://localhost:8080/provider-portal.html"
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
