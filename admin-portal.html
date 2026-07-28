@@ -124,7 +124,6 @@
       return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
     });
   }
-  function money(cents){ return cents == null ? "" : "$" + (cents / 100).toFixed(2); }
   function timeStr(d){ return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); }
 
   // ---------- data ----------
@@ -132,14 +131,13 @@
     var { data } = await supabaseClient
       .from("bookings")
       .select("id, slot_start, slot_end, status, guest_name, guest_email, service_name, provider_id, " +
-              "services(name, property), providers(display_name), profiles:student_profile_id(name, phone), payments(status, amount_cents)")
+              "services(name, property), providers(display_name), profiles:student_profile_id(name, phone)")
       .order("slot_start", { ascending: true });
 
     allBookings = (data || []).map(function(b){
       var svc = Array.isArray(b.services) ? b.services[0] : b.services;
       var prov = Array.isArray(b.providers) ? b.providers[0] : b.providers;
       var prof = Array.isArray(b.profiles) ? b.profiles[0] : b.profiles;
-      var pay = b.payments && b.payments[0] ? b.payments[0] : null;
       return {
         id: b.id,
         start: new Date(b.slot_start),
@@ -152,9 +150,7 @@
         email: b.guest_email || null,
         phone: (prof && prof.phone) || null,
         isGuest: !!b.guest_name,
-        property: (svc && svc.property) || "barbers",
-        paymentStatus: pay ? pay.status : "unpaid",
-        amountCents: pay ? pay.amount_cents : null
+        property: (svc && svc.property) || "barbers"
       };
     });
 
@@ -279,7 +275,6 @@
       '<span class="ag-who">' + escapeHtml(b.customer) + " · " + escapeHtml(b.barber) + '</span>' +
       '<span class="ag-tags">' +
         '<span class="pill pill-' + b.status + '">' + b.status + '</span>' +
-        '<span class="pill pill-' + (b.paymentStatus === "paid" ? "paid" : "pending") + '">' + b.paymentStatus + '</span>' +
       '</span>';
     row.addEventListener("click", function(){ openDetail(b); });
     return row;
@@ -347,8 +342,6 @@
         (b.phone ? detailRow("Phone", '<a href="tel:' + escapeHtml(b.phone) + '">' + escapeHtml(b.phone) + "</a>") : "") +
         detailRow("Property", b.property) +
         detailRow("Status", '<span class="pill pill-' + b.status + '">' + b.status + "</span>") +
-        detailRow("Payment", '<span class="pill pill-' + (b.paymentStatus === "paid" ? "paid" : "pending") + '">' + b.paymentStatus + "</span>" +
-          (b.amountCents != null ? " " + money(b.amountCents) : "")) +
       '</div>';
 
     var canCancel = b.status === "pending" || b.status === "confirmed";
@@ -361,7 +354,7 @@
     if (canCancel){
       document.getElementById("detailCancelBtn").addEventListener("click", async function(){
         this.disabled = true;
-        var ok = await cancelBooking(b.id, b.paymentStatus === "paid");
+        var ok = await cancelBooking(b.id);
         if (ok){ hideModal(); await loadBookings(); render(); }
         else this.disabled = false;
       });
@@ -382,14 +375,13 @@
 
   document.getElementById("exportCsvBtn").addEventListener("click", function(){
     var rows = filtered();
-    var lines = [["Date","Time","Service","Property","Customer","Email","Phone","Barber","Status","Payment","Amount (CAD)"].join(",")];
+    var lines = [["Date","Time","Service","Property","Customer","Email","Phone","Barber","Status"].join(",")];
     rows.forEach(function(b){
       lines.push([
         stamp(b.start),
         timeStr(b.start),
         b.service, b.property, b.customer, b.email || "", b.phone || "", b.barber,
-        b.status, b.paymentStatus,
-        b.amountCents != null ? (b.amountCents/100).toFixed(2) : ""
+        b.status
       ].map(csvEscape).join(","));
     });
     var blob = new Blob([lines.join("\n")], { type: "text/csv" });

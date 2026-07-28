@@ -16,14 +16,9 @@ function escapeHtml(value) {
 // provider cancelling one of theirs, an admin cancelling any. RLS decides
 // who's actually allowed; this just flips the status. Cancelled bookings
 // are excluded from the DB's no-overlap constraint, so the slot opens back
-// up for booking immediately. Cancelling does NOT refund a paid booking —
-// Square refunds are a manual dashboard action — hence the stronger
-// warning when a payment has already gone through.
-async function cancelBooking(bookingId, isPaid) {
-  const message = isPaid
-    ? "Cancel this booking? It's already PAID — cancelling here does not issue a refund. Refunds are handled separately in Square."
-    : "Cancel this booking? The time slot will open back up for others.";
-  if (!confirm(message)) return false;
+// up for booking immediately.
+async function cancelBooking(bookingId) {
+  if (!confirm("Cancel this booking? The time slot will open back up for others.")) return false;
   const { error } = await supabaseClient
     .from("bookings")
     .update({ status: "cancelled" })

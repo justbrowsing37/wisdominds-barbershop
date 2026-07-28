@@ -178,14 +178,13 @@
             student_profile_id: myProfile.id,
             slot_start: slot.start.toISOString(),
             slot_end: slot.end.toISOString(),
-            status: "pending"
+            status: "confirmed"
           }).select().single();
           if (error) {
             picker.innerHTML = '<p class="empty-note">' + error.message + '</p>';
             return;
           }
-          picker.innerHTML = '<p class="empty-note">Booked — sending you to checkout…</p>';
-          await goToCheckout(newBooking.id);
+          picker.innerHTML = '<p class="empty-note">You\'re booked in!</p>';
           renderMyBookings();
         });
         picker.appendChild(btn);
@@ -195,44 +194,10 @@
     }
   });
 
-  // Calls the create-checkout Edge Function and redirects to Square's
-  // hosted payment page. If Square isn't configured yet (no access token
-  // set as an Edge Function secret), the booking still exists as "pending"
-  // and this just surfaces a friendly message instead of erroring out.
-  // `triggerBtn` (the Pay Now button) is disabled for the duration so a
-  // slow network + impatient double-click can't fire two checkout sessions
-  // against the same booking.
-  async function goToCheckout(bookingId, triggerBtn) {
-    if (triggerBtn) {
-      if (triggerBtn.disabled) return;
-      triggerBtn.disabled = true;
-      triggerBtn.dataset.originalText = triggerBtn.textContent;
-      triggerBtn.textContent = "Redirecting…";
-    }
-    try {
-      var { data, error } = await supabaseClient.functions.invoke("create-checkout", {
-        body: { booking_id: bookingId }
-      });
-      if (error || !data || !data.url) {
-        var msg = (data && data.error) || "Payment isn't set up yet — your booking is saved as pending.";
-        alert(msg);
-        return;
-      }
-      window.location.href = data.url;
-    } catch (err) {
-      alert("Something went wrong reaching checkout. Please try again in a moment.");
-    } finally {
-      if (triggerBtn) {
-        triggerBtn.disabled = false;
-        triggerBtn.textContent = triggerBtn.dataset.originalText;
-      }
-    }
-  }
-
   async function renderMyBookings() {
     var { data } = await supabaseClient
       .from("bookings")
-      .select("*, services(name), providers(display_name), payments(status)")
+      .select("*, services(name), providers(display_name)")
       .eq("student_profile_id", myProfile.id)
       .gte("slot_start", new Date().toISOString())
       .in("status", ["pending", "confirmed"])
@@ -245,7 +210,6 @@
     }
     list.innerHTML = "";
     data.forEach(function (b) {
-      var paymentStatus = b.payments && b.payments[0] ? b.payments[0].status : "pending";
       var el = document.createElement("div");
       el.className = "booking-row";
       el.innerHTML =
@@ -254,19 +218,14 @@
         '<span class="booking-who">with ' + escapeHtml(b.providers ? b.providers.display_name : providerLabel) + '</span>' +
         '<span class="booking-tags">' +
           '<span class="pill pill-' + b.status + '">' + b.status + '</span>' +
-          '<span class="pill pill-' + (paymentStatus === "paid" ? "paid" : "pending") + '">' + paymentStatus + '</span>' +
-          (paymentStatus !== "paid" ? '<button class="btn btn-outline btn-sm pay-now-btn" type="button" data-id="' + b.id + '">Pay Now</button>' : '') +
-          '<button class="btn btn-outline btn-sm cancel-booking-btn" type="button" data-id="' + b.id + '" data-paid="' + (paymentStatus === "paid") + '">Cancel</button>' +
+          '<button class="btn btn-outline btn-sm cancel-booking-btn" type="button" data-id="' + b.id + '">Cancel</button>' +
         '</span>';
       list.appendChild(el);
-    });
-    list.querySelectorAll(".pay-now-btn").forEach(function (btn) {
-      btn.addEventListener("click", function () { goToCheckout(btn.dataset.id, btn); });
     });
     list.querySelectorAll(".cancel-booking-btn").forEach(function (btn) {
       btn.addEventListener("click", async function () {
         btn.disabled = true;
-        var cancelled = await cancelBooking(btn.dataset.id, btn.dataset.paid === "true");
+        var cancelled = await cancelBooking(btn.dataset.id);
         if (cancelled) renderMyBookings();
         else btn.disabled = false;
       });

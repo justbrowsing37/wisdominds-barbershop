@@ -141,7 +141,7 @@
   async function renderBookings() {
     var { data } = await supabaseClient
       .from("bookings")
-      .select("*, services(name), profiles:student_profile_id(name), payments(status)")
+      .select("*, services(name), profiles:student_profile_id(name)")
       .eq("provider_id", providerRow.id)
       .gte("slot_start", new Date().toISOString())
       .in("status", ["pending", "confirmed"])
@@ -154,7 +154,6 @@
     }
     list.innerHTML = "";
     data.forEach(function (b) {
-      var paymentStatus = b.payments && b.payments[0] ? b.payments[0].status : "pending";
       var el = document.createElement("div");
       el.className = "booking-row";
       el.innerHTML =
@@ -163,15 +162,14 @@
         '<span class="booking-who">' + escapeHtml(b.profiles ? b.profiles.name : "Student") + '</span>' +
         '<span class="booking-tags">' +
           '<span class="pill pill-' + b.status + '">' + b.status + '</span>' +
-          '<span class="pill pill-' + (paymentStatus === "paid" ? "paid" : "pending") + '">' + paymentStatus + '</span>' +
-          '<button class="btn btn-outline btn-sm cancel-booking-btn" type="button" data-id="' + b.id + '" data-paid="' + (paymentStatus === "paid") + '">Cancel</button>' +
+          '<button class="btn btn-outline btn-sm cancel-booking-btn" type="button" data-id="' + b.id + '">Cancel</button>' +
         '</span>';
       list.appendChild(el);
     });
     list.querySelectorAll(".cancel-booking-btn").forEach(function (btn) {
       btn.addEventListener("click", async function () {
         btn.disabled = true;
-        var cancelled = await cancelBooking(btn.dataset.id, btn.dataset.paid === "true");
+        var cancelled = await cancelBooking(btn.dataset.id);
         if (cancelled) renderBookings();
         else btn.disabled = false;
       });

@@ -47,7 +47,7 @@
     <span class="sep" aria-hidden="true"></span>
     <div class="step" data-step="2"><span class="num">2</span><span class="label">Barber &amp; Time</span></div>
     <span class="sep" aria-hidden="true"></span>
-    <div class="step" data-step="3"><span class="num">3</span><span class="label">Payment</span></div>
+    <div class="step" data-step="3"><span class="num">3</span><span class="label">Your Details</span></div>
   </div>
 
   <div class="wizard-viewport" id="wizardViewport">
@@ -85,14 +85,14 @@
         </div>
       </section>
 
-      <!-- Step 3: details + payment -->
-      <section class="wizard-step" data-step="3" aria-label="Details and payment">
+      <!-- Step 3: details -->
+      <section class="wizard-step" data-step="3" aria-label="Your details">
         <button class="wizard-back" type="button" data-back-to="2">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
           Change time
         </button>
-        <h2>Your details &amp; payment</h2>
-        <p class="step-sub">Secure card payment — you'll get an email confirmation once it's done.</p>
+        <h2>Your details</h2>
+        <p class="step-sub">Payment is taken in person at the shop — you'll get an email confirmation once you're booked in.</p>
 
         <div class="pay-layout">
           <div class="card pay-summary" id="paySummary"></div>
@@ -105,13 +105,7 @@
             <label>Email
               <input type="email" id="payEmail" autocomplete="email" required>
             </label>
-            <p class="card-field-label">Card details</p>
-            <div id="card-container"></div>
-            <button class="btn btn-gold pay-btn" type="submit" id="payBtn">Pay &amp; Confirm</button>
-            <p class="pay-note">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              Payments are processed securely by Square. We never see your card number.
-            </p>
+            <button class="btn btn-gold pay-btn" type="submit" id="payBtn">Confirm Booking</button>
           </form>
         </div>
       </section>
@@ -136,21 +130,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js" integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/booking.js"></script>
-<script>
-  // ============================================================
-  // Square Web Payments SDK configuration.
-  // applicationId + environment MUST match the SQUARE_ACCESS_TOKEN
-  // deployed on the `barber-book` Edge Function.
-  //   - Sandbox app id looks like "sandbox-sq0idb-..."
-  //   - Production app id looks like "sq0idp-..."
-  // Get it from the Square Developer Dashboard → your application → Credentials.
-  // ============================================================
-  var SQUARE_CONFIG = {
-    applicationId: "REPLACE_WITH_SQUARE_PRODUCTION_APPLICATION_ID",
-    locationId: "L1Q0XJ67RBW2D",
-    environment: "production" // "sandbox" | "production"
-  };
-</script>
 <script>
 (function(){
   "use strict";
@@ -223,7 +202,7 @@
     });
   });
 
-  // ---------- Step 1: services (live from Square via Edge Function) ----------
+  // ---------- Step 1: services (from the Supabase catalog via Edge Function) ----------
   async function loadServices(){
     var grid = document.getElementById("serviceGrid");
     try {
@@ -235,7 +214,7 @@
         setViewportHeight();
         return;
       }
-      // Local photos to fall back on when a service has no Square image.
+      // Local photos to fall back on when a service has no image.
       var LOCAL_THUMBS = [
         "assets/images/barbershop-cut.jpg",
         "assets/images/barbershop-chair.jpg",
@@ -294,14 +273,11 @@
       barbersCache = res.data || [];
     }
 
-    // Only offer barbers who actually do the chosen service. This uses
-    // provider_services, which links Supabase service rows to providers, so
-    // it applies when the menu came from the Supabase catalog (serviceId set).
-    // Square-sourced services have no such mapping, so we show all barbers.
-    // If a service has no links at all (unseeded), fall back to all barbers
-    // rather than dead-ending the booking.
+    // Only offer barbers who actually do the chosen service, via
+    // provider_services. If a service has no links at all (unseeded), fall
+    // back to all barbers rather than dead-ending the booking.
     var allowed = barbersCache;
-    if (selected.service && selected.service.serviceId){
+    if (selected.service){
       var linkRes = await supabaseClient
         .from("provider_services")
         .select("provider_id")
@@ -405,14 +381,14 @@
       btn.textContent = slot.start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
       btn.addEventListener("click", function(){
         selected.slot = slot;
-        goToPayment();
+        goToDetails();
       });
       timeGrid.appendChild(btn);
     });
     setViewportHeight();
   }
 
-  // ---------- Step 3: payment ----------
+  // ---------- Step 3: details ----------
   function renderPaySummary(){
     var s = selected.service, b = selected.barber, slot = selected.slot;
     document.getElementById("paySummary").innerHTML =
@@ -421,60 +397,12 @@
       '<div class="pay-summary-row"><span class="k">Barber</span><span class="v">' + escapeHtml(b.display_name) + '</span></div>' +
       '<div class="pay-summary-row"><span class="k">When</span><span class="v">' + fmtWhen(slot.start) + '</span></div>' +
       '<div class="pay-summary-row"><span class="k">Duration</span><span class="v">' + fmtDuration(s.durationMin) + '</span></div>' +
-      '<div class="pay-summary-total"><span class="k">Total</span><span class="v">' + fmtPrice(s.priceCents) + '</span></div>';
+      '<div class="pay-summary-total"><span class="k">Price</span><span class="v">' + fmtPrice(s.priceCents) + '</span></div>';
   }
 
-  function goToPayment(){
+  function goToDetails(){
     renderPaySummary();
     goToStep(3, "fade");
-    initSquare();
-  }
-
-  // ---------- Square Web Payments SDK ----------
-  var squarePayments = null;
-  var squareCard = null;
-  var squareReady = false;
-
-  function loadSquareSdk(){
-    return new Promise(function(resolve, reject){
-      if (window.Square){ resolve(); return; }
-      var src = SQUARE_CONFIG.environment === "production"
-        ? "https://web.squarecdn.com/v1/square.js"
-        : "https://sandbox.web.squarecdn.com/v1/square.js";
-      var s = document.createElement("script");
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = function(){ reject(new Error("Square SDK failed to load")); };
-      document.head.appendChild(s);
-    });
-  }
-
-  async function initSquare(){
-    if (squareReady) return;
-    var payMsg = document.getElementById("payMessage");
-    var payBtn = document.getElementById("payBtn");
-
-    if (!SQUARE_CONFIG.applicationId || SQUARE_CONFIG.applicationId.indexOf("REPLACE_WITH") === 0){
-      payMsg.className = "pay-message is-visible is-info";
-      payMsg.textContent = "Card payments aren't switched on yet. Add your Square Application ID to finish setup.";
-      payBtn.disabled = true;
-      setViewportHeight();
-      return;
-    }
-
-    try {
-      await loadSquareSdk();
-      squarePayments = window.Square.payments(SQUARE_CONFIG.applicationId, SQUARE_CONFIG.locationId);
-      squareCard = await squarePayments.card();
-      await squareCard.attach("#card-container");
-      squareReady = true;
-      setViewportHeight();
-    } catch (e){
-      payMsg.className = "pay-message is-visible is-error";
-      payMsg.textContent = "Couldn't start the card form. Please refresh and try again.";
-      payBtn.disabled = true;
-      setViewportHeight();
-    }
   }
 
   document.getElementById("payForm").addEventListener("submit", async function(e){
@@ -491,53 +419,18 @@
       setViewportHeight();
       return;
     }
-    if (!squareReady || !squareCard){
-      payMsg.className = "pay-message is-visible is-error";
-      payMsg.textContent = "The card form isn't ready yet.";
-      setViewportHeight();
-      return;
-    }
 
     payBtn.disabled = true;
-    payBtn.textContent = "Processing…";
+    payBtn.textContent = "Booking…";
 
     try {
-      var tokenResult = await squareCard.tokenize();
-      if (tokenResult.status !== "OK"){
-        throw new Error((tokenResult.errors && tokenResult.errors[0] && tokenResult.errors[0].message) || "Please check your card details.");
-      }
-      var sourceId = tokenResult.token;
-
-      // 3-D Secure / SCA verification — best effort; proceed without it if
-      // the SDK can't verify (e.g. cards that don't require it).
-      var verificationToken = null;
-      try {
-        var nameParts = name.split(/\s+/);
-        var vr = await squarePayments.verifyBuyer(sourceId, {
-          amount: (selected.service.priceCents / 100).toFixed(2),
-          currencyCode: selected.service.currency || "CAD",
-          intent: "CHARGE",
-          customerInitiated: true,
-          sellerKeyedIn: false,
-          billingContact: {
-            givenName: nameParts[0] || name,
-            familyName: nameParts.slice(1).join(" ") || undefined,
-            email: email
-          }
-        });
-        verificationToken = vr && vr.token;
-      } catch (ve){ /* optional */ }
-
       var res = await supabaseClient.functions.invoke("barber-book", {
         body: {
           providerId: selected.barber.id,
-          variationId: selected.service.variationId || null,
-          serviceId: selected.service.serviceId || null,
+          serviceId: selected.service.serviceId,
           startAt: selected.slot.start.toISOString(),
           guestName: name,
-          guestEmail: email,
-          sourceId: sourceId,
-          verificationToken: verificationToken
+          guestEmail: email
         }
       });
 
@@ -548,7 +441,7 @@
         (error && error.context && await safeErrText(error)) || null;
 
       if (error || !data || !data.ok){
-        throw new Error(friendly || "Payment couldn't be completed. Please try again.");
+        throw new Error(friendly || "Couldn't complete your booking. Please try again.");
       }
 
       renderConfirmation(data.booking);
@@ -557,7 +450,7 @@
       payMsg.className = "pay-message is-visible is-error";
       payMsg.textContent = err.message || "Something went wrong. Please try again.";
       payBtn.disabled = false;
-      payBtn.textContent = "Pay & Confirm";
+      payBtn.textContent = "Confirm Booking";
       setViewportHeight();
     }
   });
@@ -581,7 +474,7 @@
       '<div class="pay-summary-row"><span class="k">Service</span><span class="v">' + escapeHtml(booking.serviceName) + '</span></div>' +
       '<div class="pay-summary-row"><span class="k">Barber</span><span class="v">' + escapeHtml(booking.providerName) + '</span></div>' +
       '<div class="pay-summary-row"><span class="k">When</span><span class="v">' + when + '</span></div>' +
-      '<div class="pay-summary-total"><span class="k">Paid</span><span class="v">' + fmtPrice(booking.priceCents) + '</span></div>';
+      '<div class="pay-summary-total"><span class="k">Price</span><span class="v">' + fmtPrice(booking.priceCents) + '</span></div>';
     setViewportHeight();
   }
 

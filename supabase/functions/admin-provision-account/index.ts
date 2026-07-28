@@ -4,9 +4,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-// Called directly from the browser via supabaseClient.functions.invoke, same
-// as create-checkout — needs the same OPTIONS preflight response or the
-// browser never sends the real POST. supabase-js also attaches its own
+// Called directly from the browser via supabaseClient.functions.invoke —
+// needs the OPTIONS preflight response below or the browser never sends the
+// real POST. supabase-js also attaches its own
 // x-client-info (and, on some versions, apikey/x-supabase-api-version)
 // headers to every invoke() call — omitting any of those from the allow
 // list makes the preflight fail silently, with no server-side log at all.
