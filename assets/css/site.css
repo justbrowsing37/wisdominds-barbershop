@@ -799,6 +799,10 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.82));
 }
 .book-hero-inner{position:relative; max-width:720px;}
+.hero-logo{
+  display:block; width:220px; height:auto; margin:0 auto 28px;
+  filter:drop-shadow(0 6px 24px rgba(0,0,0,.45));
+}
 .book-hero .eyebrow{justify-content:center; color:var(--gold-bright);}
 .book-hero h1{
   font-family:var(--display); font-weight:700; color:#f2f2f2;
@@ -994,6 +998,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   .service-select-grid{grid-template-columns:1fr;}
   .barber-options{grid-template-columns:1fr;}
   .wizard-progress .step .label{display:none;}
+  .hero-logo{width:160px; margin-bottom:20px;}
 }
 
 /* ============ admin: shared shell ============ */
