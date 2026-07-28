@@ -22,9 +22,9 @@
 
 <header class="site">
   <div class="header-row wrap">
-    <a class="mark" href="index.html"><img src="assets/images/logo2_icon-transparent.png" alt="" class="mark-logo"> Wisdominds Cooperative</a>
+    <a class="mark" href="index.html"><img src="assets/images/logo2_icon-transparent.png" alt="" class="mark-logo"> Wisdominds Barbers &amp; Braiders</a>
     <nav class="nav-links">
-      <a href="barbers.html" id="backNavLink">Music School</a>
+      <a href="barbers.html" id="backNavLink">Barbers &amp; Braiders</a>
     </nav>
     <div class="header-actions">
       <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false">
@@ -84,9 +84,9 @@
   var myProfile = null;
   var services = [];
   // Which property's services/providers to browse — same page serves Music
-  // and Barbers (and Coop later) via ?property=, defaulting to music since
-  // that's this page's original context.
-  var property = new URLSearchParams(window.location.search).get("property") || "music";
+  // and Barbers (and Coop later) via ?property=, defaulting to barbers since
+  // this deployment is barbershop-only.
+  var property = new URLSearchParams(window.location.search).get("property") || "barbers";
   var providerLabel = property === "barbers" ? "Barber" : "Teacher";
 
   async function populateSetupForm() {

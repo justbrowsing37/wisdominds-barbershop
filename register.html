@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="assets/images/favicon-64.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/images/favicon-180.png">
-<title>Register | Wisdominds Cooperative</title>
+<title>Register | Wisdominds Barbers &amp; Braiders</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -22,11 +22,11 @@
 
 <header class="site">
   <div class="header-row wrap">
-    <a class="mark" href="index.html"><img src="assets/images/logo2_icon-transparent.png" alt="" class="mark-logo"> Wisdominds Cooperative</a>
+    <a class="mark" href="index.html"><img src="assets/images/logo2_icon-transparent.png" alt="" class="mark-logo"> Wisdominds Barbers &amp; Braiders</a>
     <nav class="nav-links">
-      <a href="barbers.html">Barbers</a>
+      <a href="index.html">Home</a>
+      <a href="barbers.html">Shop</a>
       <a href="index.html#membership">Membership</a>
-      <a href="index.html#contact">Contact</a>
     </nav>
     <div class="header-actions">
       <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false">
@@ -46,7 +46,7 @@
 <main class="auth-shell">
   <div class="card auth-card">
     <h1>Create Your Account</h1>
-    <p class="section-sub" id="registerSub">Register to book and track your appointments with Wisdominds Cooperative.</p>
+    <p class="section-sub" id="registerSub">Register to book and track your appointments with Wisdominds Barbers &amp; Braiders.</p>
 
     <div class="auth-message" id="authMessage"></div>
 
@@ -93,7 +93,7 @@
   // Which property this signup belongs to. Checked in order of how strong
   // the signal is: an explicit ?property= on this page beats one buried in
   // a carried-through ?next= (e.g. "student-portal.html?property=barbers"
-  // from a booking redirect), which beats the "music" default used by the
+  // from a booking redirect), which beats the "barbers" default used by the
   // plain header "Register" link that carries no context at all. Only ever
   // trust one of the real enum values — never pass arbitrary query input
   // into the signup payload.
@@ -110,7 +110,7 @@
         if (validProperties.includes(fromNext)) return fromNext;
       }
     }
-    return "music";
+    return "barbers";
   }
 
   (function(){

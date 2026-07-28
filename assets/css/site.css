@@ -201,7 +201,7 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
 .hero-stat + .hero-stat{padding-top:18px; border-top:1px solid var(--hairline-on-slate);}
 
 /* ============ home: initiative switcher ============ */
-.switcher-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:22px;}
+.switcher-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
 .switcher-card{
   padding:30px 28px; display:flex; flex-direction:column; gap:14px;
   text-decoration:none; color:inherit;
