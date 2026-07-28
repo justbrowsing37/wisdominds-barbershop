@@ -800,17 +800,17 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
 }
 .book-hero-inner{position:relative; max-width:720px;}
 .hero-logo{
-  display:block; width:340px; max-width:80vw; height:auto; margin:0 auto 20px;
+  display:block; width:460px; max-width:85vw; height:auto; margin:0 auto 28px;
   filter:drop-shadow(0 6px 24px rgba(0,0,0,.45));
 }
 .book-hero .eyebrow{justify-content:center; color:var(--gold-bright);}
 .book-hero h1{
   font-family:var(--display); font-weight:700; color:#f2f2f2;
-  font-size:clamp(2.4rem, 6vw, 4.2rem); line-height:1.04; letter-spacing:-.02em;
+  font-size:clamp(1.9rem, 4.6vw, 3.1rem); line-height:1.06; letter-spacing:-.02em;
   margin:0; text-shadow:0 2px 16px rgba(0,0,0,.55); text-wrap:balance;
 }
 .book-hero p.lead{
-  color:var(--silver); font-size:1.12rem; margin:22px auto 0; max-width:44ch; text-wrap:balance;
+  color:var(--silver); font-size:1rem; margin:20px auto 0; max-width:44ch; text-wrap:balance;
 }
 .book-hero .book-cta{margin-top:38px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
 .book-hero .btn-gold{padding:16px 40px; font-size:1rem; border-radius:4px;}
@@ -998,7 +998,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   .service-select-grid{grid-template-columns:1fr;}
   .barber-options{grid-template-columns:1fr;}
   .wizard-progress .step .label{display:none;}
-  .hero-logo{width:230px; margin-bottom:16px;}
+  .hero-logo{width:290px; margin-bottom:20px;}
 }
 
 /* ============ admin: shared shell ============ */
