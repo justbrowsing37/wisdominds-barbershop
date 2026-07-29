@@ -2,3 +2,4 @@
 logins.txt
 supabase/.temp/
 .claude/
+*.docx

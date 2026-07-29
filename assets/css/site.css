@@ -365,6 +365,31 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
 .gallery-caption a{color:var(--gold); text-decoration:none; font-weight:600;}
 .gallery-caption a:hover{text-decoration:underline;}
 
+/* home: 2-up gallery teaser linking to the full gallery page */
+.gallery-teaser{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.gallery-teaser .gallery-item{
+  aspect-ratio:16/10; display:block; cursor:pointer;
+  transition:border-color .18s ease, transform .18s ease;
+}
+.gallery-teaser .gallery-item:hover{border-color:var(--gold); transform:translateY(-3px);}
+.gallery-teaser .gallery-item img{width:100%; height:100%; object-fit:cover;}
+@media (max-width:640px){ .gallery-teaser{grid-template-columns:1fr;} }
+
+/* ============ gallery page: photo + video walls ============ */
+.photo-wall{column-count:3; column-gap:12px;}
+.photo-wall img{
+  width:100%; display:block; margin:0 0 12px; break-inside:avoid;
+  border-radius:8px; border:1px solid var(--hairline); background:var(--panel);
+}
+.video-wall{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+.gallery-video{
+  border-radius:8px; overflow:hidden; border:1px solid var(--hairline);
+  background:#000; aspect-ratio:9/16;
+}
+.gallery-video video{width:100%; height:100%; object-fit:cover; display:block;}
+@media (max-width:900px){ .photo-wall{column-count:2;} }
+@media (max-width:560px){ .photo-wall{column-count:1;} .video-wall{grid-template-columns:1fr;} }
+
 /* ============ barbers page: location ============ */
 .location-grid{display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:start;}
 .map-frame{border:1px solid var(--hairline); border-radius:6px; overflow:hidden; aspect-ratio:16/10; margin-bottom:22px; background:var(--panel);}
