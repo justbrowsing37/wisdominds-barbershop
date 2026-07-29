@@ -1,0 +1,103 @@
+// Careers application form on academy.html. No database write and no
+// applicant account — this just relays the submission to the shop's inbox
+// via Resend (same provider barber-book already uses for confirmations),
+// so there's no new secret to provision beyond RESEND_API_KEY.
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BOOKING_EMAIL_FROM = Deno.env.get("BOOKING_EMAIL_FROM") ?? "Wisdominds Barbers <onboarding@resend.dev>";
+const CAREERS_NOTIFY_EMAIL = Deno.env.get("CAREERS_NOTIFY_EMAIL") ?? "wisdomindscoop@gmail.com";
+
+const VALID_ROLES = ["Barber", "Braider", "Apprentice", "Academy Instructor", "Other"];
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
+}
+
+function isEmail(s: string) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+  if (!RESEND_API_KEY) {
+    return jsonResponse({ error: "Applications aren't being accepted online right now — please call the shop instead." }, 503);
+  }
+
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "Invalid request body" }, 400);
+  }
+
+  const name = String(body.name ?? "").trim();
+  const email = String(body.email ?? "").trim();
+  const phone = String(body.phone ?? "").trim();
+  const role = String(body.role ?? "").trim();
+  const message = String(body.message ?? "").trim();
+
+  if (!name || !email || !role) {
+    return jsonResponse({ error: "Name, email, and role are required." }, 400);
+  }
+  if (!isEmail(email)) {
+    return jsonResponse({ error: "Please enter a valid email address." }, 400);
+  }
+  if (!VALID_ROLES.includes(role)) {
+    return jsonResponse({ error: "Please choose a valid role." }, 400);
+  }
+  if (message.length > 4000) {
+    return jsonResponse({ error: "Message is too long." }, 400);
+  }
+
+  try {
+    const emailRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: BOOKING_EMAIL_FROM,
+        to: [CAREERS_NOTIFY_EMAIL],
+        reply_to: email,
+        subject: `Careers application — ${role} — ${name}`,
+        html: `
+          <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b2333">
+            <h2 style="color:#0f172a">New Careers Application</h2>
+            <table style="width:100%;border-collapse:collapse;margin:20px 0">
+              <tr><td style="padding:8px 0;color:#5b6478">Name</td><td style="padding:8px 0;text-align:right"><strong>${escapeHtml(name)}</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Role</td><td style="padding:8px 0;text-align:right">${escapeHtml(role)}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Email</td><td style="padding:8px 0;text-align:right">${escapeHtml(email)}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Phone</td><td style="padding:8px 0;text-align:right">${escapeHtml(phone || "—")}</td></tr>
+            </table>
+            ${message ? `<p style="color:#5b6478;font-size:14px;white-space:pre-wrap">${escapeHtml(message)}</p>` : ""}
+          </div>`,
+      }),
+    });
+    if (!emailRes.ok) {
+      return jsonResponse({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
+    }
+  } catch {
+    return jsonResponse({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
+  }
+
+  return jsonResponse({ ok: true }, 200);
+});
