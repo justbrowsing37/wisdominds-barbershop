@@ -10,26 +10,17 @@
   --live: #5fa872;
   --hairline-on-slate: rgba(196,196,196,.16);
 
-  /* theme-reactive role tokens (light values = default) */
-  --bg: #ffffff;
-  --panel: #f6f4ef;
-  --ink: #1b2333;
-  --text-dim: #5b6478;
-  --hairline: rgba(0,0,0,.12);
-  --header-bg-fallback: rgba(255,255,255,.9);
-
-  --display: "Sora", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --body: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-/* Light is the default — its values live on :root above; only dark overrides. */
-:root[data-theme="dark"]{
+  /* role tokens — dark is the only theme */
   --bg: #000000;
   --panel: #121212;
   --ink: #ededed;
   --text-dim: #C4C4C4;
   --hairline: rgba(196,196,196,.18);
   --header-bg-fallback: rgba(0,0,0,.9);
+
+  --display: "Sora", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 *{box-sizing:border-box;}
@@ -122,18 +113,6 @@ header.site{
 .text-link svg{width:13px; height:13px; transition:transform .15s ease;}
 .text-link:hover{color:var(--gold);}
 .text-link:hover svg{transform:translateX(3px);}
-
-/* ============ theme toggle ============ */
-.theme-toggle{
-  display:flex; align-items:center; justify-content:center;
-  width:38px; height:38px; padding:0; border-radius:50%;
-  background:transparent; border:1px solid var(--hairline);
-  color:var(--gold); cursor:pointer; flex-shrink:0;
-  transition:border-color .15s ease, background .15s ease;
-}
-.theme-toggle:hover{border-color:var(--gold); background:color-mix(in srgb, var(--gold) 10%, transparent);}
-.theme-toggle:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
-.theme-toggle svg{width:18px; height:18px; display:block;}
 
 /* ============ section shell ============ */
 section{padding:88px 0;}
@@ -290,18 +269,10 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
   position:absolute; inset:0; background-size:cover; background-position:center;
   opacity:0; animation:heroSlideCycle 22s infinite;
 }
-.hero-slide:nth-child(1){ background-image:url("../images/barbershop-cut.jpg"); animation-delay:0s; }
-.hero-slide:nth-child(2){ background-image:url("../images/barbershop-chair.jpg"); animation-delay:5.5s; }
-.hero-slide:nth-child(3){ background-image:url("../images/barbershop-interior.jpg"); animation-delay:11s; }
-.hero-slide:nth-child(4){ background-image:url("../images/barbershop-shave.avif"); animation-delay:16.5s; }
-
-/* ============ music page: photo hero slides (overrides the barbershop
-   defaults above via the extra .hero-photo-music class, same slideshow
-   mechanics) ============ */
-.hero-photo-music .hero-slide:nth-child(1){ background-image:url("../images/music1.jpg"); animation-delay:0s; }
-.hero-photo-music .hero-slide:nth-child(2){ background-image:url("../images/music2.jpg"); animation-delay:5.5s; }
-.hero-photo-music .hero-slide:nth-child(3){ background-image:url("../images/music3.jpg"); animation-delay:11s; }
-.hero-photo-music .hero-slide:nth-child(4){ background-image:url("../images/music4.jpg"); animation-delay:16.5s; }
+.hero-slide:nth-child(1){ background-image:url("../images/Carousel Images/barbershop-cut.jpg"); animation-delay:0s; }
+.hero-slide:nth-child(2){ background-image:url("../images/Carousel Images/barbershop-chair.jpg"); animation-delay:5.5s; }
+.hero-slide:nth-child(3){ background-image:url("../images/Carousel Images/barbershop-interior.jpg"); animation-delay:11s; }
+.hero-slide:nth-child(4){ background-image:url("../images/Carousel Images/barbershop-shave.avif"); animation-delay:16.5s; }
 .hero-scrim{
   position:absolute; inset:0; z-index:-1;
   background:
@@ -386,9 +357,8 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
   display:grid; grid-template-columns:repeat(4,1fr);
   grid-auto-rows:170px; grid-auto-flow:dense; gap:10px;
 }
-.gallery-item{position:relative; overflow:hidden; border-radius:6px; border:1px solid var(--hairline);}
-.gallery-item img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s ease;}
-.gallery-item:hover img{transform:scale(1.04);}
+.gallery-item{position:relative; overflow:hidden; border-radius:6px; border:1px solid var(--hairline); background:#111;}
+.gallery-item img{width:100%; height:100%; object-fit:contain; display:block;}
 .gallery-item.wide{grid-column:span 2;}
 .gallery-item.tall{grid-row:span 2;}
 .gallery-caption{text-align:center; font-family:var(--body); font-size:.9rem; color:var(--text-dim); margin:22px 0 0;}
