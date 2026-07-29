@@ -89,8 +89,8 @@ header.site{
 /* ============ buttons / links ============ */
 .btn{
   display:inline-block;
-  font-family:var(--body); font-weight:600; font-size:.9rem;
-  padding:12px 24px; border-radius:3px;
+  font-family:var(--body); font-weight:600; font-size:1.125rem;
+  padding:15px 30px; border-radius:3px;
   text-decoration:none; cursor:pointer; border:1px solid transparent;
   transition:background .15s ease, color .15s ease, border-color .15s ease, filter .15s ease;
 }
@@ -102,7 +102,7 @@ header.site{
 .btn-outline:hover{border-color:var(--gold);}
 .btn-outline-light{border-color:var(--hairline-on-slate); color:#fff; background:transparent;}
 .btn-outline-light:hover{border-color:var(--gold); color:var(--gold);}
-.btn-sm{padding:9px 18px; font-size:.82rem;}
+.btn-sm{padding:11.25px 22.5px; font-size:1.025rem;}
 
 .text-link{
   display:inline-flex; align-items:center; gap:6px;
@@ -565,7 +565,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   .header-row{gap:12px;}
   .mark{font-size:.95rem; gap:6px;}
   .header-actions{gap:8px;}
-  .header-actions .btn{padding:8px 12px; font-size:.78rem;}
+  .header-actions .btn{padding:10px 15px; font-size:.975rem;}
   .stat-band-grid{grid-template-columns:1fr;}
   .footer-grid{grid-template-columns:1fr;}
   .services-grid{grid-template-columns:1fr;}
@@ -596,7 +596,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   font-family:var(--body); font-size:.9rem; color:var(--ink);
   background:var(--bg); border:1px solid var(--hairline); border-radius:3px; padding:9px 10px;
 }
-.availability-form .btn{padding:10px 18px; font-size:.82rem; border:none;}
+.availability-form .btn{padding:12.5px 22.5px; font-size:1.025rem; border:none;}
 
 .slot-list{display:flex; flex-direction:column; gap:8px;}
 .slot-row{
@@ -659,7 +659,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;
 }
 .portal-section-head h2{margin:0;}
-.portal-section-head .btn{border:none; padding:9px 16px; font-size:.82rem; white-space:nowrap;}
+.portal-section-head .btn{border:none; padding:11.25px 20px; font-size:1.025rem; white-space:nowrap;}
 
 .filter-row{
   display:flex; flex-wrap:wrap; gap:14px; align-items:end;
@@ -718,7 +718,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   font-family:var(--body); font-size:.86rem; color:var(--ink);
   background:var(--bg); border:1px solid var(--hairline); border-radius:3px; padding:7px 9px;
 }
-.slot-edit-form .btn{border:none; padding:8px 14px; font-size:.8rem;}
+.slot-edit-form .btn{border:none; padding:10px 17.5px; font-size:1rem;}
 
 /* ============ music page: promo strip ============ */
 .camp-strip{
@@ -849,7 +849,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   color:var(--silver); font-size:1rem; margin:20px auto 0; max-width:44ch; text-wrap:balance;
 }
 .book-hero .book-cta{margin-top:38px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
-.book-hero .btn-gold{padding:16px 40px; font-size:1rem; border-radius:4px;}
+.book-hero .btn-gold{padding:20px 50px; font-size:1.25rem; border-radius:4px;}
 .book-hero .btn-outline{border-color:rgba(196,196,196,.45); color:#f2f2f2;}
 .book-hero .btn-outline:hover{border-color:var(--gold); background:rgba(196,196,196,.12);}
 .book-hero .scroll-hint{
@@ -1003,7 +1003,7 @@ footer.site-footer{background:var(--slate); color:var(--silver-on-slate); paddin
   min-height:52px; padding:4px 2px;
   border:1px solid var(--hairline); border-radius:4px; background:var(--bg);
 }
-.pay-btn{border:none; width:100%; text-align:center; padding:15px; font-size:1rem; margin-top:4px;}
+.pay-btn{border:none; width:100%; text-align:center; padding:18.75px; font-size:1.25rem; margin-top:4px;}
 .pay-note{font-size:.76rem; color:var(--text-dim); margin:0; display:flex; align-items:center; gap:7px;}
 .pay-message{
   font-family:var(--body); font-size:.86rem; border-radius:4px; padding:10px 14px; display:none;
