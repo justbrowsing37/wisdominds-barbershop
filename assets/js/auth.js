@@ -15,11 +15,11 @@ async function getProfile(authUserId) {
 
 function portalPathForRole(role) {
   if (role === "admin") return "admin-portal.html";
-  if (role === "teacher") return "teacher-portal.html";
-  return "student-portal.html";
+  if (role === "teacher") return "provider-portal.html";
+  return "my-appointments.html";
 }
 
-// Only ever follow a same-page relative link (e.g. "student-portal.html?
+// Only ever follow a same-page relative link (e.g. "my-appointments.html?
 // property=barbers"), never an absolute URL/other host — otherwise a
 // crafted "?next=" could turn login.html into an open redirect. Also
 // reject login.html/register.html themselves, since honoring those as a
@@ -94,7 +94,7 @@ async function signOut() {
 // /music.html are public pages that also load auth.js just to check session
 // state for the nav, and shouldn't be yanked to login.html when someone
 // signs out elsewhere.
-var PORTAL_PAGES = ["student-portal.html", "teacher-portal.html", "admin-portal.html"];
+var PORTAL_PAGES = ["my-appointments.html", "provider-portal.html", "admin-portal.html"];
 supabaseClient.auth.onAuthStateChange(function (event) {
   var page = window.location.pathname.split("/").pop();
   if (event === "SIGNED_OUT" && PORTAL_PAGES.includes(page)) {
