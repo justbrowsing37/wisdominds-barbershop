@@ -191,7 +191,9 @@
   // ---------- Step 1: services (from the Supabase catalog via Edge Function) ----------
 
   // Pick a local photo for a service from keywords in its name/category, so new
-  // service types (braids, cornrows…) get the right image automatically.
+  // service types (braids, cornrows…) get the right image automatically. Returns
+  // null when there's no real photo for that service yet (matches the homepage
+  // Services section, where those get a plain no-photo card instead of a stand-in).
   function serviceImage(svc){
     var n = ((svc.name || "") + " " + (svc.description || "")).toLowerCase();
     if (/crochet/.test(n))            return "assets/images/services/service-crochet-braids.jpg";
@@ -199,9 +201,9 @@
     if (/cornrow/.test(n))            return /wom|female|ladies|lady|girl/.test(n)
                                         ? "assets/images/services/service-womens-cornrows.jpg"
                                         : "assets/images/services/service-mens-cornrows.jpg";
-    if (/beard|shave|razor|towel/.test(n)) return "assets/images/Carousel%20Images/barbershop-shave.avif";
+    if (/beard|shave|razor|towel/.test(n)) return null;
     if (/junior|kid|child/.test(n))   return "assets/images/services/service-kids-haircut.jpg";
-    if (/fade|taper/.test(n))         return "assets/images/Carousel%20Images/barbershop-cut.jpg";
+    if (/fade|taper/.test(n))         return null;
     return "assets/images/services/service-mens-haircut.jpg";
   }
 
@@ -244,11 +246,12 @@
         var cards = document.createElement("div");
         cards.className = "service-select-grid";
         groups[cat].forEach(function(svc){
+          var photo = serviceImage(svc);
           var card = document.createElement("button");
           card.type = "button";
           card.className = "service-pick";
           card.innerHTML =
-            '<div class="thumb" style="background-image:url(\'' + serviceImage(svc) + '\')"></div>' +
+            '<div class="thumb"' + (photo ? ' style="background-image:url(\'' + photo + '\')"' : '') + '></div>' +
             '<div class="body">' +
               '<h4>' + escapeHtml(svc.name) + '</h4>' +
               '<div class="meta"><span class="price">' + fmtPrice(svc.priceCents) + '</span>' +
