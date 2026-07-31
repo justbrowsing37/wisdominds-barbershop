@@ -314,22 +314,22 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
 
 /* sub-page photo hero band (about / academy) — placeholder until a team photo lands */
 .page-hero.hero.hero-photo{
-  padding:112px 24px 66px; min-height:40vh;
+  padding:120px 24px 128px; min-height:66vh;
   display:flex; align-items:center;
 }
 .page-hero .wrap{width:100%;}
 /* static base so the crossfade's brief between-slide gap never flashes black */
 .page-hero .hero-media{background:#000 url("../images/Carousel Images/barbershop-interior.jpg") center/cover no-repeat;}
-/* fade the photo's bottom edge into the body so there's no harsh seam */
+/* large, gradual fade of the photo's lower half into the body — no harsh seam */
 .page-hero .hero-scrim{
   background:
     radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--gold) 22%, transparent), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.68) 0%, rgba(0,0,0,.70) 52%, var(--bg) 100%);
+    linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.5) 30%, var(--bg) 92%);
 }
 .page-hero .section-label{margin-bottom:14px; text-shadow:0 1px 6px rgba(0,0,0,.5);}
 .page-hero h1.hero-headline{max-width:24ch; font-size:clamp(1.95rem, 4.6vw, 3.05rem);}
 @media (max-width:640px){
-  .page-hero.hero.hero-photo{min-height:34vh; padding:96px 22px 54px;}
+  .page-hero.hero.hero-photo{min-height:54vh; padding:100px 22px 96px;}
 }
 
 /* faint grid backdrop that fades out — gives flat sections some depth */
