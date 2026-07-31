@@ -320,6 +320,12 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
 .page-hero .wrap{width:100%;}
 /* static base so the crossfade's brief between-slide gap never flashes black */
 .page-hero .hero-media{background:#000 url("../images/Carousel Images/barbershop-interior.jpg") center/cover no-repeat;}
+/* fade the photo's bottom edge into the body so there's no harsh seam */
+.page-hero .hero-scrim{
+  background:
+    radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--gold) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.68) 0%, rgba(0,0,0,.70) 52%, var(--bg) 100%);
+}
 .page-hero .section-label{margin-bottom:14px; text-shadow:0 1px 6px rgba(0,0,0,.5);}
 .page-hero h1.hero-headline{max-width:24ch; font-size:clamp(1.95rem, 4.6vw, 3.05rem);}
 @media (max-width:640px){
