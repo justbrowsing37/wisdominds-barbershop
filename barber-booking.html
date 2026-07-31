@@ -93,6 +93,7 @@
             <label>Email
               <input type="email" id="payEmail" autocomplete="email" required>
             </label>
+            <div class="cf-turnstile-slot"></div>
             <button class="btn btn-gold pay-btn" type="submit" id="payBtn">Confirm Booking</button>
           </form>
         </div>
@@ -117,6 +118,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js" integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
 <script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/turnstile.js"></script>
 <script src="assets/js/booking.js"></script>
 <script>
 (function(){
@@ -454,9 +456,11 @@
           serviceId: selected.service.serviceId,
           startAt: selected.slot.start.toISOString(),
           guestName: name,
-          guestEmail: email
+          guestEmail: email,
+          turnstileToken: window.turnstileToken && window.turnstileToken()
         }
       });
+      if (window.turnstileReset) window.turnstileReset();
 
       var data = res.data, error = res.error;
       // functions.invoke surfaces non-2xx as error; the JSON body still

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/security.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -10,33 +11,27 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 // x-client-info (and, on some versions, apikey/x-supabase-api-version)
 // headers to every invoke() call — omitting any of those from the allow
 // list makes the preflight fail silently, with no server-side log at all.
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 const ALLOWED_ROLES = ["student", "teacher"];
 const ALLOWED_PROPERTIES = ["music", "barbers", "coop"];
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json", ...cors },
+    });
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: cors });
   }
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return json({ error: "Method not allowed" }, 405);
   }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return jsonResponse({ error: "Missing Authorization header" }, 401);
+    return json({ error: "Missing Authorization header" }, 401);
   }
 
   // Bound to the caller's own JWT — used only to confirm who they are.
@@ -45,7 +40,7 @@ Deno.serve(async (req) => {
   });
   const { data: userData, error: userError } = await callerClient.auth.getUser();
   if (userError || !userData.user) {
-    return jsonResponse({ error: "Not authenticated" }, 401);
+    return json({ error: "Not authenticated" }, 401);
   }
 
   // Service-role client to check the caller's own role and, if authorized,
@@ -61,7 +56,7 @@ Deno.serve(async (req) => {
     .eq("auth_user_id", userData.user.id)
     .single();
   if (!callerProfile || callerProfile.role !== "admin") {
-    return jsonResponse({ error: "Admin access required" }, 403);
+    return json({ error: "Admin access required" }, 403);
   }
 
   let body: {
@@ -77,7 +72,7 @@ Deno.serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: "Invalid request body" }, 400);
+    return json({ error: "Invalid request body" }, 400);
   }
 
   const { mode, role, phone } = body;
@@ -86,7 +81,7 @@ Deno.serve(async (req) => {
   // particular, "admin" is never accepted here, even though the UI never
   // offers it. Granting admin stays a deliberate action outside this path.
   if (!role || !ALLOWED_ROLES.includes(role)) {
-    return jsonResponse({ error: "role must be student or teacher" }, 400);
+    return json({ error: "role must be student or teacher" }, 400);
   }
 
   if (mode === "update") {
@@ -95,7 +90,7 @@ Deno.serve(async (req) => {
     // a plain client-side update from the admin's own session.
     const { profile_id } = body;
     if (!profile_id) {
-      return jsonResponse({ error: "profile_id is required" }, 400);
+      return json({ error: "profile_id is required" }, 400);
     }
     const { data: profile, error: updateError } = await adminClient
       .from("profiles")
@@ -104,18 +99,18 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
     if (updateError || !profile) {
-      return jsonResponse({ error: updateError?.message ?? "Role update failed" }, 500);
+      return json({ error: updateError?.message ?? "Role update failed" }, 500);
     }
-    return jsonResponse({ profile_id: profile.id }, 200);
+    return json({ profile_id: profile.id }, 200);
   }
 
   // Default / mode === "create": provision a brand-new account.
   const { email, temp_password, name, property } = body;
   if (!email || !temp_password || !name || !property) {
-    return jsonResponse({ error: "email, temp_password, name, and property are required" }, 400);
+    return json({ error: "email, temp_password, name, and property are required" }, 400);
   }
   if (!ALLOWED_PROPERTIES.includes(property)) {
-    return jsonResponse({ error: "Invalid property" }, 400);
+    return json({ error: "Invalid property" }, 400);
   }
 
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
@@ -125,7 +120,7 @@ Deno.serve(async (req) => {
     user_metadata: { name, property },
   });
   if (createError || !created.user) {
-    return jsonResponse({ error: createError?.message ?? "Failed to create account" }, 400);
+    return json({ error: createError?.message ?? "Failed to create account" }, 400);
   }
 
   // handle_new_user() has already inserted a profiles row defaulting to
@@ -139,8 +134,8 @@ Deno.serve(async (req) => {
     .select("id")
     .single();
   if (updateError || !profile) {
-    return jsonResponse({ error: updateError?.message ?? "Account created but role assignment failed" }, 500);
+    return json({ error: updateError?.message ?? "Account created but role assignment failed" }, 500);
   }
 
-  return jsonResponse({ profile_id: profile.id }, 200);
+  return json({ profile_id: profile.id }, 200);
 });

@@ -3,6 +3,16 @@
 // via Resend (same provider barber-book already uses for confirmations),
 // so there's no new secret to provision beyond RESEND_API_KEY.
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  clientIp,
+  corsHeaders,
+  overRateLimit,
+  turnstilePasses,
+} from "../_shared/security.ts";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const BOOKING_EMAIL_FROM = Deno.env.get("BOOKING_EMAIL_FROM") ?? "Wisdominds Barbers <onboarding@resend.dev>";
 const CAREERS_NOTIFY_EMAIL = Deno.env.get("CAREERS_NOTIFY_EMAIL") ?? "wisdomindscoop@gmail.com";
@@ -15,19 +25,6 @@ const VALID_ROLES = [
   "Other",
 ];
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 function isEmail(s: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 }
@@ -37,21 +34,38 @@ function escapeHtml(s: string) {
 }
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json", ...cors },
+    });
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: cors });
   }
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return json({ error: "Method not allowed" }, 405);
   }
+
+  const srv = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const ip = clientIp(req);
+  if (await overRateLimit(srv, "careers:ip", ip, 5, 600)) {
+    return json({ error: "Too many applications. Please wait a few minutes and try again." }, 429);
+  }
+
   if (!RESEND_API_KEY) {
-    return jsonResponse({ error: "Applications aren't being accepted online right now — please call the shop instead." }, 503);
+    return json({ error: "Applications aren't being accepted online right now — please call the shop instead." }, 503);
   }
 
   let body: any;
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: "Invalid request body" }, 400);
+    return json({ error: "Invalid request body" }, 400);
+  }
+  if (!(await turnstilePasses(body?.turnstileToken, ip))) {
+    return json({ error: "Verification failed. Please refresh and try again." }, 403);
   }
 
   const name = String(body.name ?? "").trim();
@@ -64,16 +78,16 @@ Deno.serve(async (req) => {
   const message = String(body.message ?? "").trim();
 
   if (!name || !email || !role) {
-    return jsonResponse({ error: "Name, email, and role are required." }, 400);
+    return json({ error: "Name, email, and role are required." }, 400);
   }
   if (!isEmail(email)) {
-    return jsonResponse({ error: "Please enter a valid email address." }, 400);
+    return json({ error: "Please enter a valid email address." }, 400);
   }
   if (!VALID_ROLES.includes(role)) {
-    return jsonResponse({ error: "Please choose a valid role." }, 400);
+    return json({ error: "Please choose a valid role." }, 400);
   }
   if (message.length > 4000) {
-    return jsonResponse({ error: "Message is too long." }, 400);
+    return json({ error: "Message is too long." }, 400);
   }
 
   try {
@@ -105,11 +119,11 @@ Deno.serve(async (req) => {
       }),
     });
     if (!emailRes.ok) {
-      return jsonResponse({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
+      return json({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
     }
   } catch {
-    return jsonResponse({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
+    return json({ error: "Couldn't send your application. Please try again or email us directly." }, 502);
   }
 
-  return jsonResponse({ ok: true }, 200);
+  return json({ ok: true }, 200);
 });

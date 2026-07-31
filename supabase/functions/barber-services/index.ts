@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/security.ts";
 
 // Returns the barbershop's bookable services for the guest wizard, from the
 // Supabase `services` table (property = 'barbers'). No online payment —
@@ -8,22 +9,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json", ...cors },
+    });
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: cors });
   }
 
   const db = createClient(SUPABASE_URL, ANON_KEY);
@@ -33,7 +28,7 @@ Deno.serve(async (req) => {
     .eq("property", "barbers");
 
   if (error || !data || !data.length) {
-    return jsonResponse({ error: "No services are set up for online booking yet." }, 503);
+    return json({ error: "No services are set up for online booking yet." }, 503);
   }
 
   const services = data
@@ -49,5 +44,5 @@ Deno.serve(async (req) => {
     // Cheapest first feels natural for a services menu.
     .sort((a: any, b: any) => a.priceCents - b.priceCents);
 
-  return jsonResponse({ services }, 200);
+  return json({ services }, 200);
 });

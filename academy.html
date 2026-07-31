@@ -287,6 +287,7 @@
           <label>Additional Comments (optional)
             <textarea name="message" rows="3" placeholder="Anything else you'd like us to know&hellip;"></textarea>
           </label>
+          <div class="cf-turnstile-slot"></div>
           <button class="btn btn-gold" type="submit" id="careersSubmit">Submit Application</button>
           <p class="form-note">To include your résumé, email it to barberbraiders@wisdominds.com after submitting.</p>
         </form>
@@ -339,6 +340,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js" integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
 <script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/turnstile.js"></script>
 <script>
   function showCareersMessage(text, kind){
     var el = document.getElementById("careersMessage");
@@ -358,7 +360,8 @@
       experience: form.experience.value.trim(),
       startDate: form.startDate.value.trim(),
       portfolio: form.portfolio.value.trim(),
-      message: form.message.value.trim()
+      message: form.message.value.trim(),
+      turnstileToken: window.turnstileToken && window.turnstileToken()
     };
 
     submitBtn.disabled = true;
@@ -378,6 +381,7 @@
     } catch (err) {
       showCareersMessage(err.message || "Something went wrong. Please try again.", "error");
     } finally {
+      if (window.turnstileReset) window.turnstileReset();
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit Application";
     }

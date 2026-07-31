@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  clientIp,
+  corsHeaders,
+  escapeHtml,
+  overRateLimit,
+  shopLocalParts,
+  turnstilePasses,
+} from "../_shared/security.ts";
 
 // Guest booking for the barbershop wizard. No account and no payment
 // required: the visitor picks a Supabase service, a Supabase barber, and a
@@ -19,19 +27,6 @@ const SHOP_PHONE = "(416) 844-8287";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
-
 function isEmail(s: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 }
@@ -48,29 +43,47 @@ function formatWhen(iso: string) {
 }
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json", ...cors },
+    });
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: cors });
   }
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return json({ error: "Method not allowed" }, 405);
+  }
+
+  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const ip = clientIp(req);
+  if (await overRateLimit(adminClient, "book:ip", ip, 8, 600)) {
+    return json({ error: "Too many booking attempts. Please wait a few minutes and try again." }, 429);
   }
 
   let body: any;
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: "Invalid request body" }, 400);
+    return json({ error: "Invalid request body" }, 400);
   }
 
-  const { providerId, serviceId, startAt, guestName, guestEmail } = body;
+  const { providerId, serviceId, startAt, guestName, guestEmail, turnstileToken } = body;
   if (!providerId || !serviceId || !startAt || !guestName || !guestEmail) {
-    return jsonResponse({ error: "Missing required booking details." }, 400);
+    return json({ error: "Missing required booking details." }, 400);
   }
   if (!isEmail(String(guestEmail))) {
-    return jsonResponse({ error: "Please enter a valid email address." }, 400);
+    return json({ error: "Please enter a valid email address." }, 400);
   }
-
-  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  if (!(await turnstilePasses(turnstileToken, ip))) {
+    return json({ error: "Verification failed. Please refresh and try again." }, 403);
+  }
+  // Per-email throttle so one address can't be email-bombed via bookings.
+  if (await overRateLimit(adminClient, "book:email", String(guestEmail).trim().toLowerCase(), 5, 600)) {
+    return json({ error: "Too many bookings for this email. Please wait a few minutes." }, 429);
+  }
 
   // Barber must be a real Supabase provider for this property.
   const { data: provider, error: providerError } = await adminClient
@@ -79,7 +92,7 @@ Deno.serve(async (req) => {
     .eq("id", providerId)
     .single();
   if (providerError || !provider || provider.property !== "barbers") {
-    return jsonResponse({ error: "That barber isn't available." }, 404);
+    return json({ error: "That barber isn't available." }, 404);
   }
 
   // Re-price + re-name the service server-side so the client can't tamper
@@ -90,7 +103,7 @@ Deno.serve(async (req) => {
     .eq("id", serviceId)
     .single();
   if (svcError || !svc || svc.property !== "barbers") {
-    return jsonResponse({ error: "That service is no longer available." }, 404);
+    return json({ error: "That service is no longer available." }, 404);
   }
   const priceCents = svc.price_cents;
   const durationMin = svc.duration_minutes;
@@ -98,9 +111,35 @@ Deno.serve(async (req) => {
 
   const startDate = new Date(startAt);
   if (isNaN(startDate.getTime())) {
-    return jsonResponse({ error: "Invalid appointment time." }, 400);
+    return json({ error: "Invalid appointment time." }, 400);
+  }
+  if (startDate.getTime() <= Date.now()) {
+    return json({ error: "Please choose a time in the future." }, 422);
   }
   const endDate = new Date(startDate.getTime() + durationMin * 60000);
+
+  // The slot must fall inside this barber's configured availability for that
+  // day (shop-local), so a crafted request can't book 3am / off-hours times.
+  const local = shopLocalParts(startDate, SHOP_TIMEZONE);
+  const slotStartMin = local.minutes;
+  const slotEndMin = slotStartMin + durationMin;
+  const { data: windows } = await adminClient
+    .from("availability")
+    .select("is_recurring, day_of_week, specific_date, start_time, end_time")
+    .eq("provider_id", providerId);
+  const toMin = (t: string) => {
+    const [h, m] = String(t).split(":");
+    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  };
+  const withinHours = (windows ?? []).some((w: any) => {
+    const applies = w.is_recurring
+      ? w.day_of_week === local.dow
+      : w.specific_date === local.dateStr;
+    return applies && toMin(w.start_time) <= slotStartMin && toMin(w.end_time) >= slotEndMin;
+  });
+  if (!withinHours) {
+    return json({ error: "That time isn't within the barber's available hours." }, 422);
+  }
 
   // Reserve the slot directly as confirmed — no payment step to gate on. The
   // bookings_no_overlap exclusion constraint rejects (Postgres 23P01) if this
@@ -124,9 +163,9 @@ Deno.serve(async (req) => {
     .single();
   if (bookingError || !booking) {
     if (bookingError?.code === "23P01") {
-      return jsonResponse({ error: "Sorry, that time was just booked. Please pick another." }, 409);
+      return json({ error: "Sorry, that time was just booked. Please pick another." }, 409);
     }
-    return jsonResponse({ error: "Couldn't hold that time. Please try again." }, 500);
+    return json({ error: "Couldn't hold that time. Please try again." }, 500);
   }
 
   // Best-effort confirmation email.
@@ -148,7 +187,7 @@ Deno.serve(async (req) => {
           html: `
             <div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1b2333">
               <h2 style="color:#0f172a">You're booked in 💈</h2>
-              <p>Hi ${String(guestName).trim()}, your appointment at <strong>${SHOP_NAME}</strong> is confirmed.</p>
+              <p>Hi ${escapeHtml(String(guestName).trim())}, your appointment at <strong>${SHOP_NAME}</strong> is confirmed.</p>
               <table style="width:100%;border-collapse:collapse;margin:20px 0">
                 <tr><td style="padding:8px 0;color:#5b6478">Service</td><td style="padding:8px 0;text-align:right"><strong>${serviceName}</strong></td></tr>
                 <tr><td style="padding:8px 0;color:#5b6478">Barber</td><td style="padding:8px 0;text-align:right">${provider.display_name}</td></tr>
@@ -167,7 +206,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonResponse(
+  return json(
     {
       ok: true,
       booking: {
