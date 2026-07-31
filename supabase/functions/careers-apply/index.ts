@@ -7,7 +7,13 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const BOOKING_EMAIL_FROM = Deno.env.get("BOOKING_EMAIL_FROM") ?? "Wisdominds Barbers <onboarding@resend.dev>";
 const CAREERS_NOTIFY_EMAIL = Deno.env.get("CAREERS_NOTIFY_EMAIL") ?? "wisdomindscoop@gmail.com";
 
-const VALID_ROLES = ["Barber", "Braider", "Apprentice", "Academy Instructor", "Other"];
+const VALID_ROLES = [
+  "Full-Time Barber",
+  "Hair Braider",
+  "Apprentice",
+  "Academy Instructor",
+  "Other",
+];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +58,9 @@ Deno.serve(async (req) => {
   const email = String(body.email ?? "").trim();
   const phone = String(body.phone ?? "").trim();
   const role = String(body.role ?? "").trim();
+  const experience = String(body.experience ?? "").trim();
+  const portfolio = String(body.portfolio ?? "").trim();
+  const startDate = String(body.startDate ?? "").trim();
   const message = String(body.message ?? "").trim();
 
   if (!name || !email || !role) {
@@ -84,11 +93,14 @@ Deno.serve(async (req) => {
             <h2 style="color:#0f172a">New Careers Application</h2>
             <table style="width:100%;border-collapse:collapse;margin:20px 0">
               <tr><td style="padding:8px 0;color:#5b6478">Name</td><td style="padding:8px 0;text-align:right"><strong>${escapeHtml(name)}</strong></td></tr>
-              <tr><td style="padding:8px 0;color:#5b6478">Role</td><td style="padding:8px 0;text-align:right">${escapeHtml(role)}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Position</td><td style="padding:8px 0;text-align:right">${escapeHtml(role)}</td></tr>
               <tr><td style="padding:8px 0;color:#5b6478">Email</td><td style="padding:8px 0;text-align:right">${escapeHtml(email)}</td></tr>
               <tr><td style="padding:8px 0;color:#5b6478">Phone</td><td style="padding:8px 0;text-align:right">${escapeHtml(phone || "—")}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Experience</td><td style="padding:8px 0;text-align:right">${escapeHtml(experience || "—")}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Available From</td><td style="padding:8px 0;text-align:right">${escapeHtml(startDate || "—")}</td></tr>
+              <tr><td style="padding:8px 0;color:#5b6478">Portfolio / Social</td><td style="padding:8px 0;text-align:right">${escapeHtml(portfolio || "—")}</td></tr>
             </table>
-            ${message ? `<p style="color:#5b6478;font-size:14px;white-space:pre-wrap">${escapeHtml(message)}</p>` : ""}
+            ${message ? `<p style="color:#5b6478;font-size:14px;white-space:pre-wrap"><strong>Comments:</strong><br>${escapeHtml(message)}</p>` : ""}
           </div>`,
       }),
     });
