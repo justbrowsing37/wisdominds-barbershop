@@ -312,6 +312,20 @@ h1.hero-headline em{color:var(--gold); font-style:normal;}
   .hero-slide:nth-child(1){opacity:1;}
 }
 
+/* sub-page photo hero band (about / academy) — placeholder until a team photo lands */
+.page-hero.hero.hero-photo{
+  padding:112px 24px 66px; min-height:40vh;
+  display:flex; align-items:center;
+}
+.page-hero .wrap{width:100%;}
+/* static base so the crossfade's brief between-slide gap never flashes black */
+.page-hero .hero-media{background:#000 url("../images/Carousel Images/barbershop-interior.jpg") center/cover no-repeat;}
+.page-hero .section-label{margin-bottom:14px; text-shadow:0 1px 6px rgba(0,0,0,.5);}
+.page-hero h1.hero-headline{max-width:24ch; font-size:clamp(1.95rem, 4.6vw, 3.05rem);}
+@media (max-width:640px){
+  .page-hero.hero.hero-photo{min-height:34vh; padding:96px 22px 54px;}
+}
+
 /* ============ barbers page: services ============ */
 .service-category + .service-category{margin-top:44px;}
 .category-label{
